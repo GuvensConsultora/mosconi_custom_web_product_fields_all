@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Agregar contenedores para mostrar info de variante en ficha de producto -->
+    <template id="product_variant_info" inherit_id="website_sale.product">
+
+        <!--
+            Por qué: Insertamos antes de los atributos para mostrar
+            el nombre del color seleccionado y el SKU en contexto.
+        -->
+        <xpath expr="//table[@id='product_attributes_simple']" position="before">
+            <div id="variant_info_container" class="mb-3">
+                <!-- Color seleccionado -->
+                <div id="selected_color_display" class="d-none">
+                    <span class="fw-bold">Color: </span>
+                    <span id="selected_color_name" class="text-primary"></span>
+                </div>
+                <!-- SKU/Referencia -->
+                <div id="variant_sku_display" class="d-none mt-1">
+                    <span class="text-muted">SKU: </span>
+                    <span id="variant_sku" class="text-muted fw-semibold"></span>
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+
+</odoo>
