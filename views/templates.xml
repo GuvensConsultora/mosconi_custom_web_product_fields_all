@@ -1,25 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Agregar contenedores para mostrar info de variante en ficha de producto -->
+    <!--
+        Template: product_variant_info
+
+        Por qué existe: Agrega contenedores HTML para mostrar información
+        de la variante seleccionada (color, SKU) en la ficha de producto.
+
+        Patrón: Template inheritance - extendemos website_sale.product
+        sin modificar el código original de Odoo.
+
+        Tip: inherit_id permite "inyectar" contenido en templates existentes
+        usando expresiones xpath para localizar dónde insertar.
+    -->
     <template id="product_variant_info" inherit_id="website_sale.product">
 
         <!--
-            Por qué: Insertamos antes de los atributos para mostrar
-            el nombre del color seleccionado y el SKU en contexto.
+            XPath: Localiza el div de atributos simples e inserta ANTES de él.
+
+            Por qué position="before": Queremos que la info de variante
+            aparezca arriba de los atributos, en una posición prominente.
+
+            Nota Odoo 18: En versiones anteriores este elemento era <table>,
+            ahora es <div>. Siempre verificar la estructura del template padre.
         -->
         <xpath expr="//div[@id='product_attributes_simple']" position="before">
+
+            <!--
+                Contenedor principal para info de variante.
+
+                Por qué id específico: Permite que el JS lo encuentre fácilmente.
+                Por qué d-none inicial: Se oculta hasta que el JS lo llene.
+
+                Tip: Bootstrap usa d-none para display:none.
+                El JS remueve esta clase cuando hay datos para mostrar.
+            -->
             <div id="variant_info_container" class="mb-3">
-                <!-- Color seleccionado -->
+
+                <!--
+                    Display del color seleccionado.
+
+                    Nota: Este es un contenedor "legacy" que el JS puede usar
+                    como fallback. La estrategia principal es insertar el nombre
+                    del color inline junto al label del atributo (ver JS).
+                -->
                 <div id="selected_color_display" class="d-none">
                     <span class="fw-bold">Color: </span>
                     <span id="selected_color_name" class="text-primary"></span>
                 </div>
-                <!-- SKU/Referencia -->
+
+                <!--
+                    Display del SKU/Referencia interna.
+
+                    Por qué mostrar SKU: Muchos clientes B2B buscan productos
+                    por código/referencia. Mostrar el SKU mejora la UX.
+
+                    Clases Bootstrap:
+                    - text-muted: Color gris sutil
+                    - fw-semibold: Peso de fuente medio (no tan bold)
+                    - mt-1: Margin-top pequeño
+                -->
                 <div id="variant_sku_display" class="d-none mt-1">
                     <span class="text-muted">SKU: </span>
                     <span id="variant_sku" class="text-muted fw-semibold"></span>
                 </div>
+
             </div>
         </xpath>
 
