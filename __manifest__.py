@@ -1,9 +1,22 @@
 {
-    "name": "Mosconi - Mostrar Color y SKU de Variante",
-    "version": "18.0",
+    "name": "Mosconi - Variante Info y Calculador de Flete",
+    "version": "18.0.2.0.0",
     "category": "Website",
-    "summary": "Muestra el nombre del color y la referencia al seleccionar una variante en la tienda",
-    "depends": ["website_sale"],
+    "summary": "Muestra color/SKU de variante y calcula flete por código postal",
+    "description": """
+        Módulo para mejorar la experiencia de compra en el eCommerce:
+
+        * Muestra el nombre del color seleccionado (inline con el atributo)
+        * Muestra el SKU/referencia interna de la variante
+        * Calculador de flete por código postal antes de agregar al carrito
+
+        Requiere tener métodos de envío configurados y publicados en el website.
+    """,
+    "author": "Guvens Consultora",
+    "depends": [
+        "website_sale",
+        "delivery",  # Por qué: Necesario para acceder a delivery.carrier
+    ],
     "data": [
         "views/templates.xml",
     ],

@@ -68,6 +68,128 @@
             </div>
         </xpath>
 
+        <!--
+            Calculador de flete por código postal.
+
+            Por qué después del botón agregar al carrito: Es el momento
+            donde el usuario ya decidió el producto y quiere saber el costo total.
+
+            Patrón: Inserción después de un elemento existente usando position="after"
+        -->
+        <xpath expr="//a[@id='add_to_cart']" position="after">
+
+            <!--
+                Contenedor del calculador de flete.
+
+                Por qué card: Bootstrap card da un aspecto visual diferenciado
+                que indica que es una sección independiente.
+
+                Por qué mt-3: Margin-top para separar del botón de agregar al carrito.
+            -->
+            <div id="shipping_calculator" class="mt-4 p-3 border rounded bg-light">
+
+                <!--
+                    Título de la sección.
+
+                    Por qué h6: Tamaño moderado, no compite con el título del producto.
+                    Por qué mb-3: Espacio inferior antes del input.
+                -->
+                <h6 class="fw-bold mb-3">
+                    <i class="fa fa-truck me-2"/>Calcular costo de envío
+                </h6>
+
+                <!--
+                    Input group: Campo + Botón en la misma línea.
+
+                    Patrón Bootstrap: input-group permite combinar elementos
+                    de formulario con botones de forma visualmente integrada.
+                -->
+                <div class="input-group">
+
+                    <!--
+                        Campo de código postal.
+
+                        Por qué type="text" y no "number": Los códigos postales
+                        argentinos pueden tener letras (ej: C1425).
+
+                        Por qué placeholder descriptivo: Deja claro qué debe ingresar
+                        el usuario sin necesidad de label adicional.
+
+                        Por qué maxlength="8": Códigos postales argentinos tienen
+                        máximo 8 caracteres (letra + 4 números + 3 letras).
+                    -->
+                    <input type="text"
+                           id="shipping_zip_code"
+                           class="form-control"
+                           placeholder="Código postal (ej: 1425)"
+                           maxlength="8"
+                           aria-label="Código postal"/>
+
+                    <!--
+                        Botón calcular flete.
+
+                        Por qué btn-primary: Color destacado que invita a la acción.
+                        Por qué id específico: Permite que el JS lo encuentre para el evento click.
+                    -->
+                    <button type="button"
+                            id="btn_calculate_shipping"
+                            class="btn btn-primary">
+                        <span class="btn_text">Calcular flete</span>
+                        <!--
+                            Spinner de carga (oculto por defecto).
+
+                            Por qué spinner dentro del botón: Feedback visual
+                            de que la consulta está en progreso.
+                        -->
+                        <span class="btn_spinner d-none">
+                            <span class="spinner-border spinner-border-sm me-1" role="status"/>
+                            Calculando...
+                        </span>
+                    </button>
+
+                </div>
+
+                <!--
+                    Contenedor para el resultado del cálculo.
+
+                    Por qué d-none inicial: Se muestra solo cuando hay resultado.
+                    Por qué mt-3: Separación del input group.
+                -->
+                <div id="shipping_result" class="mt-3 d-none">
+
+                    <!--
+                        Resultado exitoso (precio del envío).
+
+                        Por qué alert-success: Color verde indica resultado positivo.
+                        Por qué d-flex: Permite alinear icono y texto.
+                    -->
+                    <div id="shipping_result_success" class="alert alert-success d-none mb-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-check-circle me-2 fs-5"/>
+                            <div>
+                                <strong>Costo de envío a CP <span id="result_zip_code"/></strong>
+                                <div id="shipping_options" class="mt-2">
+                                    <!-- Aquí se insertan las opciones de envío dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--
+                        Resultado de error (no hay envío disponible o ZIP inválido).
+
+                        Por qué alert-warning: Color amarillo para advertencias.
+                    -->
+                    <div id="shipping_result_error" class="alert alert-warning d-none mb-0">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <span id="shipping_error_message">No hay envío disponible para este código postal.</span>
+                    </div>
+
+                </div>
+
+            </div>
+        </xpath>
+
     </template>
 
 </odoo>

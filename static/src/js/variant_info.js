@@ -1,11 +1,16 @@
 /** @odoo-module **/
 
 /**
- * Módulo: Variant Info Display
+ * Módulo: Variant Info Display & Shipping Calculator
  *
  * Por qué existe: Odoo muestra los atributos de variante como opciones seleccionables
  * (pills, colores, etc.) pero NO muestra el nombre del valor seleccionado ni el SKU.
- * Este módulo agrega esa información visual para mejorar la UX.
+ * Además, no permite calcular flete antes de agregar al carrito.
+ *
+ * Este módulo agrega:
+ * 1. Nombre del color seleccionado (inline con el atributo)
+ * 2. SKU de la variante
+ * 3. Calculador de flete por código postal
  *
  * Patrón: Widget de Odoo - se adjunta a un selector DOM y escucha eventos.
  */
@@ -27,6 +32,9 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
         'change input.js_variant_change': '_onVariantChange',
         'change select.js_variant_change': '_onVariantChange',
         'click ul.js_add_cart_variants li': '_onVariantClick',
+        // Eventos del calculador de flete
+        'click #btn_calculate_shipping': '_onCalculateShipping',
+        'keypress #shipping_zip_code': '_onZipCodeKeypress',
     },
 
     /**
@@ -51,8 +59,15 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
         // Por qué 500ms: Tiempo suficiente para que Odoo cargue combination_info
         setTimeout(() => this._updateVariantInfo(), 500);
 
+        // Inicializar referencias del calculador de flete
+        this._initShippingCalculator();
+
         return Promise.resolve();
     },
+
+    // =========================================================================
+    // SECCIÓN: Observador de Variantes
+    // =========================================================================
 
     /**
      * Configura observer para detectar cambios en product_id.
@@ -109,6 +124,10 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
         setTimeout(() => this._updateVariantInfo(), 100);
     },
 
+    // =========================================================================
+    // SECCIÓN: Información de Variante (Color, SKU)
+    // =========================================================================
+
     /**
      * Obtiene info de la variante actual via RPC y la muestra.
      *
@@ -129,9 +148,12 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
         // Por qué: Puede estar vacío o ser 0 mientras Odoo calcula
         if (!productId || productId === '0' || productId === 'false') return;
 
+        // Guardamos el product_id actual para el cálculo de flete
+        this._currentProductId = parseInt(productId);
+
         try {
             const result = await rpc('/shop/variant/info', {
-                product_id: parseInt(productId),
+                product_id: this._currentProductId,
             });
 
             this._displayVariantInfo(result);
@@ -252,6 +274,197 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
         if ($dynamicSku.length) {
             $dynamicSku.find('.sku_value').text(sku);
         }
+    },
+
+    // =========================================================================
+    // SECCIÓN: Calculador de Flete
+    // =========================================================================
+
+    /**
+     * Inicializa referencias del calculador de flete.
+     *
+     * Por qué método separado: Organiza el código y facilita mantenimiento.
+     * Se llama una vez en start().
+     */
+    _initShippingCalculator() {
+        // Referencias a elementos del DOM
+        this.$zipInput = this.$el.find('#shipping_zip_code');
+        this.$btnCalculate = this.$el.find('#btn_calculate_shipping');
+        this.$btnText = this.$btnCalculate.find('.btn_text');
+        this.$btnSpinner = this.$btnCalculate.find('.btn_spinner');
+        this.$resultContainer = this.$el.find('#shipping_result');
+        this.$resultSuccess = this.$el.find('#shipping_result_success');
+        this.$resultError = this.$el.find('#shipping_result_error');
+        this.$shippingOptions = this.$el.find('#shipping_options');
+        this.$resultZipCode = this.$el.find('#result_zip_code');
+        this.$errorMessage = this.$el.find('#shipping_error_message');
+    },
+
+    /**
+     * Handler para Enter en el campo de código postal.
+     *
+     * Por qué: Mejora UX - el usuario puede presionar Enter sin
+     * tener que hacer click en el botón.
+     */
+    _onZipCodeKeypress(ev) {
+        if (ev.key === 'Enter' || ev.keyCode === 13) {
+            ev.preventDefault();
+            this._onCalculateShipping();
+        }
+    },
+
+    /**
+     * Handler principal del botón "Calcular flete".
+     *
+     * Flujo:
+     * 1. Validar input
+     * 2. Mostrar estado de carga
+     * 3. Llamar al API
+     * 4. Mostrar resultado
+     *
+     * Por qué async/await: Código más legible que callbacks anidados.
+     */
+    async _onCalculateShipping() {
+        const zipCode = this.$zipInput.val().trim();
+
+        // Validación básica en frontend
+        // Por qué validar en frontend: Feedback inmediato, evita llamadas innecesarias
+        if (!zipCode || zipCode.length < 4) {
+            this._showShippingError('Ingrese un código postal válido (mínimo 4 caracteres)');
+            return;
+        }
+
+        // Mostrar estado de carga
+        this._setLoadingState(true);
+
+        try {
+            // Obtener cantidad del producto
+            const quantity = this._getCurrentQuantity();
+
+            const result = await rpc('/shop/shipping/calculate', {
+                zip_code: zipCode,
+                product_id: this._currentProductId || null,
+                quantity: quantity,
+            });
+
+            if (result.success) {
+                this._showShippingOptions(result);
+            } else {
+                this._showShippingError(result.error_message);
+            }
+        } catch (error) {
+            console.error('Error calculando flete:', error);
+            this._showShippingError('Error de conexión. Intente nuevamente.');
+        } finally {
+            // Siempre quitar estado de carga
+            this._setLoadingState(false);
+        }
+    },
+
+    /**
+     * Obtiene la cantidad seleccionada del producto.
+     *
+     * Por qué: El costo de envío puede variar según el peso total,
+     * que depende de la cantidad.
+     */
+    _getCurrentQuantity() {
+        const $qtyInput = this.$el.find('input[name="add_qty"]');
+        return parseInt($qtyInput.val()) || 1;
+    },
+
+    /**
+     * Alterna el estado de carga del botón.
+     *
+     * Por qué spinner: Feedback visual de que la operación está en progreso.
+     * Por qué deshabilitar: Evita múltiples clicks mientras se procesa.
+     */
+    _setLoadingState(isLoading) {
+        if (isLoading) {
+            this.$btnText.addClass('d-none');
+            this.$btnSpinner.removeClass('d-none');
+            this.$btnCalculate.prop('disabled', true);
+        } else {
+            this.$btnText.removeClass('d-none');
+            this.$btnSpinner.addClass('d-none');
+            this.$btnCalculate.prop('disabled', false);
+        }
+    },
+
+    /**
+     * Muestra las opciones de envío disponibles.
+     *
+     * Por qué lista de opciones: Puede haber múltiples carriers
+     * (ej: envío express, estándar, retiro en sucursal).
+     *
+     * Formato de cada opción:
+     * - Nombre del carrier
+     * - Precio formateado
+     * - Tiempo de entrega (si está disponible)
+     */
+    _showShippingOptions(result) {
+        // Mostrar el código postal consultado
+        this.$resultZipCode.text(result.zip_code);
+
+        // Limpiar opciones anteriores
+        this.$shippingOptions.empty();
+
+        // Crear HTML para cada opción de envío
+        result.shipping_options.forEach((option, index) => {
+            const $option = this._createShippingOptionElement(option, index === 0);
+            this.$shippingOptions.append($option);
+        });
+
+        // Mostrar resultado exitoso, ocultar error
+        this.$resultSuccess.removeClass('d-none');
+        this.$resultError.addClass('d-none');
+        this.$resultContainer.removeClass('d-none');
+    },
+
+    /**
+     * Crea el elemento HTML para una opción de envío.
+     *
+     * Por qué método separado: Single Responsibility, facilita modificar
+     * el formato de cada opción.
+     *
+     * @param {Object} option - Datos de la opción de envío
+     * @param {boolean} isFirst - Si es la primera opción (más barata)
+     */
+    _createShippingOptionElement(option, isFirst) {
+        // Formatear precio
+        // Por qué toLocaleString: Formato correcto según locale (ej: 1.234,56)
+        const formattedPrice = option.price.toLocaleString('es-AR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        // Construir HTML de la opción
+        let html = `
+            <div class="shipping-option d-flex justify-content-between align-items-center py-2 ${!isFirst ? 'border-top' : ''}">
+                <div>
+                    <span class="fw-semibold">${option.carrier_name}</span>
+                    ${option.delivery_time ? `<small class="text-muted ms-2">(${option.delivery_time})</small>` : ''}
+                    ${option.is_estimate ? '<small class="text-muted ms-2">(precio base)</small>' : ''}
+                </div>
+                <div class="text-end">
+                    <span class="fw-bold text-success">${option.currency} ${formattedPrice}</span>
+                </div>
+            </div>
+        `;
+
+        return $(html);
+    },
+
+    /**
+     * Muestra un mensaje de error en el calculador de flete.
+     *
+     * Por qué método separado: Reutilizable para diferentes tipos de error
+     * (validación, API, conexión).
+     */
+    _showShippingError(message) {
+        this.$errorMessage.text(message);
+        this.$resultError.removeClass('d-none');
+        this.$resultSuccess.addClass('d-none');
+        this.$resultContainer.removeClass('d-none');
     },
 });
 
