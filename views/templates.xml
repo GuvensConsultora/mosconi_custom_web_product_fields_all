@@ -69,12 +69,12 @@
             <!--
                 Contenedor del calculador de flete.
 
+                Por qué d-block w-100: Fuerza bloque completo, no inline
+                Por qué mt-5: Margen superior generoso para separar del botón
                 Por qué card: Bootstrap card da un aspecto visual diferenciado
                 que indica que es una sección independiente.
-
-                Por qué mt-3: Margin-top para separar del botón de agregar al carrito.
             -->
-            <div id="shipping_calculator" class="mt-4 p-3 border rounded bg-light">
+            <div id="shipping_calculator" class="d-block w-100 mt-5 p-4 border rounded bg-light shadow-sm">
 
                 <!--
                     Título de la sección.
