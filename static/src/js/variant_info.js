@@ -383,13 +383,9 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
     /**
      * Muestra las opciones de envío disponibles.
      *
-     * Por qué lista de opciones: Puede haber múltiples carriers
-     * (ej: envío express, estándar, retiro en sucursal).
-     *
-     * Formato de cada opción:
-     * - Nombre del carrier
-     * - Precio formateado
-     * - Tiempo de entrega (si está disponible)
+     * Formato adaptativo:
+     * - 1 opción: "Total: $ 1.500"
+     * - Múltiples: "Estándar: $ 1.500" / "Express: $ 2.500"
      */
     _showShippingOptions(result) {
         // Mostrar el código postal consultado
@@ -398,9 +394,12 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
         // Limpiar opciones anteriores
         this.$shippingOptions.empty();
 
+        // Por qué verificar cantidad: Formato diferente para 1 vs múltiples opciones
+        const isSingleOption = result.shipping_options.length === 1;
+
         // Crear HTML para cada opción de envío
         result.shipping_options.forEach((option, index) => {
-            const $option = this._createShippingOptionElement(option, index === 0);
+            const $option = this._createShippingOptionElement(option, index === 0, isSingleOption);
             this.$shippingOptions.append($option);
         });
 
@@ -413,13 +412,15 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
     /**
      * Crea el elemento HTML para una opción de envío.
      *
-     * Por qué método separado: Single Responsibility, facilita modificar
-     * el formato de cada opción.
+     * Formato simplificado:
+     * - Si hay 1 sola opción: "Total: $ 1.500"
+     * - Si hay múltiples: "Estándar: $ 1.500" / "Express: $ 2.500"
      *
      * @param {Object} option - Datos de la opción de envío
      * @param {boolean} isFirst - Si es la primera opción (más barata)
+     * @param {boolean} isSingleOption - Si es la única opción disponible
      */
-    _createShippingOptionElement(option, isFirst) {
+    _createShippingOptionElement(option, isFirst, isSingleOption = false) {
         // Formatear precio
         // Por qué toLocaleString: Formato correcto según locale (ej: 1.234,56)
         const formattedPrice = option.price.toLocaleString('es-AR', {
@@ -427,16 +428,25 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
             maximumFractionDigits: 2
         });
 
-        // Construir HTML de la opción
+        // Por qué label adaptativo: Si hay una sola opción, mostrar "Total"
+        // Si hay múltiples, mostrar nombre simplificado del carrier
+        let label;
+        if (isSingleOption) {
+            label = 'Total';
+        } else {
+            // Simplificar nombre: "Envío Estándar" → "Estándar"
+            label = option.carrier_name.replace(/^Envío\s+/i, '');
+        }
+
+        // Construir HTML simplificado
         let html = `
-            <div class="shipping-option d-flex justify-content-between align-items-center py-2 ${!isFirst ? 'border-top' : ''}">
-                <div>
-                    <span class="fw-semibold">${option.carrier_name}</span>
-                    ${option.delivery_time ? `<small class="text-muted ms-2">(${option.delivery_time})</small>` : ''}
-                    ${option.is_estimate ? '<small class="text-muted ms-2">(precio base)</small>' : ''}
+            <div class="shipping-option d-flex justify-content-between align-items-center py-1">
+                <div class="text-muted">
+                    <span class="fw-semibold">${label}:</span>
+                    ${option.delivery_time ? `<small class="ms-1">(${option.delivery_time})</small>` : ''}
                 </div>
                 <div class="text-end">
-                    <span class="fw-bold text-success">${option.currency} ${formattedPrice}</span>
+                    <span class="fw-bold text-success fs-5">${option.currency} ${formattedPrice}</span>
                 </div>
             </div>
         `;

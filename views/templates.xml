@@ -153,11 +153,11 @@
                         Por qué d-flex: Permite alinear icono y texto.
                     -->
                     <div id="shipping_result_success" class="alert alert-success d-none mb-0">
-                        <div class="d-flex align-items-center">
-                            <i class="fa fa-check-circle me-2 fs-5"/>
-                            <div>
-                                <strong>Costo de envío a CP <span id="result_zip_code"/></strong>
-                                <div id="shipping_options" class="mt-2">
+                        <div class="d-flex align-items-start">
+                            <i class="fa fa-truck me-2 fs-5 mt-1"/>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold mb-2">Envío a CP <span id="result_zip_code" class="text-primary"/></div>
+                                <div id="shipping_options">
                                     <!-- Aquí se insertan las opciones de envío dinámicamente -->
                                 </div>
                             </div>
