@@ -38,18 +38,6 @@
             <div id="variant_info_container" class="mb-3">
 
                 <!--
-                    Display del color seleccionado.
-
-                    Nota: Este es un contenedor "legacy" que el JS puede usar
-                    como fallback. La estrategia principal es insertar el nombre
-                    del color inline junto al label del atributo (ver JS).
-                -->
-                <div id="selected_color_display" class="d-none">
-                    <span class="fw-bold">Color: </span>
-                    <span id="selected_color_name" class="text-primary"></span>
-                </div>
-
-                <!--
                     Display del SKU/Referencia interna.
 
                     Por qué mostrar SKU: Muchos clientes B2B buscan productos

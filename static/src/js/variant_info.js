@@ -181,48 +181,35 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
     },
 
     /**
-     * Muestra el nombre del color junto al atributo correspondiente.
+     * Muestra el nombre del color inline con el encabezado del atributo.
      *
-     * Por qué buscamos por texto "Color": Es el nombre estándar del atributo.
-     * Se podría mejorar buscando por display_type='color' pero requeriría
-     * más datos del backend.
-     *
-     * Tip: :contains() es un selector jQuery que busca por texto interno
+     * Estrategia mejorada:
+     * 1. Busca el label "Color" en todos los posibles contenedores
+     * 2. Inserta el valor DENTRO del mismo label (más estético)
+     * 3. Usa parent() para encontrar el contenedor correcto
      */
     _displayColorName(colorName) {
-        // Buscar el label del atributo color en el formulario de variantes
-        // Estructura típica: <strong class="attribute_name">Color</strong>
-        const $colorLabel = this.$el.find('.js_product strong.attribute_name, .attribute_name')
+        // Por qué múltiples selectores: Odoo puede renderizar de diferentes formas
+        // según tipo de atributo (radio, select, pills)
+        const $colorLabel = this.$el.find('strong.attribute_name, .attribute_name, label.attribute_name')
             .filter(function() {
-                return $(this).text().trim().toLowerCase() === 'color';
-            });
+                const text = $(this).text().replace(/:.*/g, '').trim().toLowerCase();
+                return text === 'color';
+            })
+            .first();
 
-        if ($colorLabel.length && colorName) {
-            // Crear o actualizar el span con el nombre del color
-            let $colorValue = $colorLabel.siblings('.selected_color_value');
+        if ($colorLabel.length) {
+            // Limpiar cualquier valor anterior del color
+            $colorLabel.find('.selected_color_value').remove();
 
-            if (!$colorValue.length) {
-                // Primera vez: crear el elemento
-                // Por qué span inline: Se integra visualmente con el label
-                $colorValue = $('<span class="selected_color_value text-primary fw-semibold ms-2"></span>');
-                $colorLabel.after($colorValue);
+            if (colorName) {
+                // Por qué agregar DENTRO del label: Se ve como una sola línea estética
+                // Patrón: DOM manipulation - append inserta al final del contenido
+                const $colorValue = $('<span class="selected_color_value text-primary fw-bold ms-2"></span>')
+                    .text(`- ${colorName}`);
+
+                $colorLabel.append($colorValue);
             }
-
-            $colorValue.text(`: ${colorName}`);
-        } else if ($colorLabel.length) {
-            // Sin color: remover el valor mostrado
-            $colorLabel.siblings('.selected_color_value').remove();
-        }
-
-        // También actualizar el contenedor legacy si existe
-        const $colorDisplay = this.$el.find('#selected_color_display');
-        const $colorNameEl = this.$el.find('#selected_color_name');
-
-        if (colorName && $colorDisplay.length) {
-            $colorNameEl.text(colorName);
-            $colorDisplay.removeClass('d-none');
-        } else if ($colorDisplay.length) {
-            $colorDisplay.addClass('d-none');
         }
     },
 
