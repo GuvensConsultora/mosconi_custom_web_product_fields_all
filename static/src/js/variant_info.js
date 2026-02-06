@@ -193,20 +193,23 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
         // según tipo de atributo (radio, select, pills)
         const $colorLabel = this.$el.find('strong.attribute_name, .attribute_name, label.attribute_name')
             .filter(function() {
-                const text = $(this).text().replace(/:.*/g, '').trim().toLowerCase();
+                // Por qué regex: Elimina el valor anterior del color antes de comparar
+                const text = $(this).text().replace(/\s*-\s*.*/g, '').trim().toLowerCase();
                 return text === 'color';
             })
             .first();
 
         if ($colorLabel.length) {
             // Limpiar cualquier valor anterior del color
+            // Por qué remove: Evita duplicados al cambiar variante
             $colorLabel.find('.selected_color_value').remove();
 
             if (colorName) {
                 // Por qué agregar DENTRO del label: Se ve como una sola línea estética
                 // Patrón: DOM manipulation - append inserta al final del contenido
-                const $colorValue = $('<span class="selected_color_value text-primary fw-bold ms-2"></span>')
-                    .text(`- ${colorName}`);
+                // Por qué \u00A0: Espacio no rompible (mejor que espacio normal)
+                const $colorValue = $('<span class="selected_color_value text-primary fw-bold"></span>')
+                    .html(`&nbsp;&nbsp;-&nbsp;&nbsp;${colorName}`);
 
                 $colorLabel.append($colorValue);
             }
