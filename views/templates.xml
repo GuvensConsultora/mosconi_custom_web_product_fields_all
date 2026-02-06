@@ -59,12 +59,13 @@
         <!--
             Calculador de flete por código postal.
 
-            Por qué después del botón agregar al carrito: Es el momento
-            donde el usuario ya decidió el producto y quiere saber el costo total.
+            Por qué después de o_wsale_cta_wrapper: En Odoo 18 este div contiene
+            todos los botones de acción (add_to_cart, buy_now, etc.).
+            Insertamos después de él para separar claramente las acciones.
 
-            Patrón: Inserción después de un elemento existente usando position="after"
+            Patrón: Inserción después de un contenedor completo usando position="after"
         -->
-        <xpath expr="//a[@id='add_to_cart']" position="after">
+        <xpath expr="//div[@id='o_wsale_cta_wrapper']" position="after">
 
             <!--
                 Contenedor del calculador de flete.
