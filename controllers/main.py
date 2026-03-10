@@ -39,10 +39,15 @@ class VariantInfoController(http.Controller):
 
         color_value = self._get_color_attribute_value(product)
 
+        # Por qué free_qty: Representa stock disponible no reservado
+        # Es el campo correcto para determinar si se puede vender
+        free_qty = product.free_qty
+
         return {
             'color_name': color_value or '',
             'sku': product.default_code or '',
             'product_id': product.id,
+            'free_qty': free_qty,
         }
 
     def _get_color_attribute_value(self, product):

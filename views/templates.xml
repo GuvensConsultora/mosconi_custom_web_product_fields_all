@@ -57,6 +57,20 @@
         </xpath>
 
         <!--
+            Mensaje de sin stock.
+
+            Por qué antes de o_wsale_cta_wrapper: Reemplaza visualmente los botones
+            de compra cuando la variante seleccionada no tiene stock.
+            El JS lo muestra/oculta según el free_qty del endpoint.
+        -->
+        <xpath expr="//div[@id='o_wsale_cta_wrapper']" position="before">
+            <div id="no_stock_message" class="d-none alert alert-warning mb-3">
+                <i class="fa fa-exclamation-circle me-2"/>
+                <span class="fw-semibold">Producto sin stock disponible</span>
+            </div>
+        </xpath>
+
+        <!--
             Calculador de flete por código postal.
 
             Por qué después de o_wsale_cta_wrapper: En Odoo 18 este div contiene

@@ -178,6 +178,9 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
 
         // === MOSTRAR SKU ===
         this._displaySku(data.sku);
+
+        // === CONTROL DE STOCK: Ocultar botón comprar si stock = 0 ===
+        this._toggleAddToCartByStock(data.free_qty);
     },
 
     /**
@@ -263,6 +266,35 @@ publicWidget.registry.VariantInfoDisplay = publicWidget.Widget.extend({
 
         if ($dynamicSku.length) {
             $dynamicSku.find('.sku_value').text(sku);
+        }
+    },
+
+    // =========================================================================
+    // SECCIÓN: Control de Stock (Ocultar botón comprar sin stock)
+    // =========================================================================
+
+    /**
+     * Oculta/muestra el botón de comprar según el stock disponible.
+     *
+     * Por qué: Si la variante no tiene stock, no tiene sentido mostrar
+     * el botón de agregar al carrito. Se muestra un aviso en su lugar.
+     *
+     * Por qué ocultar #o_wsale_cta_wrapper: Es el contenedor de TODOS los
+     * botones de acción (agregar al carrito, comprar ahora). Ocultarlo
+     * previene cualquier forma de compra de esa variante.
+     */
+    _toggleAddToCartByStock(freeQty) {
+        const $ctaWrapper = this.$el.find('#o_wsale_cta_wrapper');
+        const $noStockMsg = this.$el.find('#no_stock_message');
+
+        if (freeQty <= 0) {
+            // Sin stock: ocultar botones, mostrar mensaje
+            $ctaWrapper.addClass('d-none');
+            $noStockMsg.removeClass('d-none');
+        } else {
+            // Con stock: mostrar botones, ocultar mensaje
+            $ctaWrapper.removeClass('d-none');
+            $noStockMsg.addClass('d-none');
         }
     },
 
